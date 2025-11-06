@@ -80,23 +80,6 @@ Contiene:
 - **Inizializzazione Winsock** su Windows
 - **Sezioni TODO** dove implementare la logica dell'applicazione
 
-## Portabilità Windows/Linux/macOS
-
-Il codice utilizza direttive di preprocessore per gestire le differenze tra sistemi operativi:
-
-```c
-#if defined WIN32
-    // Codice specifico per Windows (Winsock)
-#else
-    // Codice per Linux/macOS (BSD sockets)
-#endif
-```
-
-### Principali differenze gestite:
-- **Header files**: `winsock.h` su Windows vs `sys/socket.h`, `arpa/inet.h` su Unix
-- **Inizializzazione**: WSAStartup/WSACleanup richiesti solo su Windows
-- **Chiusura socket**: `closesocket()` su Windows, `close()` su Unix (definito tramite macro)
-
 ## Implementazione dell'Assegnazione
 
 Gli studenti devono:
@@ -117,12 +100,6 @@ Gli studenti devono:
 ## Note Importanti
 
 - Utilizzare le costanti definite in `header.h` invece di valori hardcoded
-
-## Risorse Utili
-
-- [Guida alle Socket Berkeley](https://beej.us/guide/bgnet/)
-- [Documentazione Winsock](https://docs.microsoft.com/en-us/windows/win32/winsock/windows-sockets-start-page-2)
-- [Man pages Linux per socket](https://man7.org/linux/man-pages/man2/socket.2.html)
 
 ## Licenza
 
