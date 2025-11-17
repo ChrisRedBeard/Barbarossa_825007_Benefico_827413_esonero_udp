@@ -146,18 +146,21 @@ Il codice deve compilare ed eseguire correttamente su:
 - Linux
 - macOS
 
-### 3. Gestione Memoria e Sicurezza
-- Nessun buffer overflow
-- Nessun memory leak
-- Validazione corretta degli input utente
-- Gestione appropriata degli errori di sistema
+### 3.Network Byte Order
+- Durante la serializzazione e deserializzazione delle strutture dati, è necessario gestire opportunamento il network byte order in base al tipo del campo
 
 ### 4. Risoluzione Nomi DNS
 - Il client deve utilizzare `localhost` come indirizzo predefinito invece di `127.0.0.1`
 - Questo requisito permette di sfruttare le funzioni di risoluzione dei nomi DNS del sistema operativo
 - Il codice deve supportare sia nomi simbolici (es. `localhost`, `example.com`) che indirizzi IP  (es. `127.0.0.1`, `192.168.1.1`)
 
-### 5. Compatibilità Eclipse CDT
+### 5. Gestione Memoria e Sicurezza
+- Nessun buffer overflow
+- Nessun memory leak
+- Validazione corretta degli input utente
+- Gestione appropriata degli errori di sistema
+
+### 6. Compatibilità Eclipse CDT
 Il progetto deve essere compatibile con Eclipse CDT e includere i file di configurazione necessari (`.project`, `.cproject`).
 
 ## Consegna
