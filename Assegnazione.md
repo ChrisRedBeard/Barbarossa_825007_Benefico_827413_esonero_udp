@@ -108,10 +108,10 @@ I formati di output rimangono **identici** al primo esonero:
 
 **Comportamento:**
 Il server rimane attivo continuamente in ascolto sulla porta specificata. Per ogni datagramma ricevuto:
-1. Riceve richiesta con `recvfrom()` (acquisendo indirizzo client)
+1. Riceve richiesta con (acquisendo indirizzo client)
 2. Valida il tipo di richiesta e il nome della città
 3. Genera il valore meteo con le funzioni `get_*()`
-4. Invia risposta al client con `sendto()` usando l'indirizzo acquisito
+4. Invia risposta al client, usando l'indirizzo acquisito
 5. Continua in ascolto per nuove richieste
 
 **Note:**
