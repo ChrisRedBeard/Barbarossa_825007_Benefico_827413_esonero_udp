@@ -1,9 +1,9 @@
 /*
  * main.c
  *
- * TCP Server - Template for Computer Networks assignment
+ * UDP Server - Template for Computer Networks assignment
  *
- * This file contains the boilerplate code for a TCP server
+ * This file contains the boilerplate code for a UDP server
  * portable across Windows, Linux and macOS.
  */
 
@@ -48,26 +48,29 @@ int main(int argc, char *argv[]) {
 
 	int my_socket;
 
-	// TODO: Create socket
-	// my_socket = socket(...);
+	// TODO: Create UDP socket
+	// my_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
 	// TODO: Configure server address
 	// struct sockaddr_in server_addr;
+	// memset(&server_addr, 0, sizeof(server_addr));
 	// server_addr.sin_family = AF_INET;
 	// server_addr.sin_port = htons(SERVER_PORT);
 	// server_addr.sin_addr.s_addr = INADDR_ANY;
 
 	// TODO: Bind socket
-	// bind(...);
+	// bind(my_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
 
-	// TODO: Set socket to listen
-	// listen(...);
-
-	// TODO: Implement connection acceptance loop
+	// TODO: Implement datagram reception loop (no listen/accept for UDP)
+	// struct sockaddr_in client_addr;
+	// int client_addr_len = sizeof(client_addr);
 	// while (1) {
-	//     int client_socket = accept(...);
-	//     // Handle client communication
-	//     closesocket(client_socket);
+	//     // Receive datagram from client
+	//     int bytes_received = recvfrom(my_socket, buffer, BUFFER_SIZE, 0,
+	//                                   (struct sockaddr*)&client_addr, &client_addr_len);
+	//     // Process and send response
+	//     sendto(my_socket, response, strlen(response), 0,
+	//            (struct sockaddr*)&client_addr, client_addr_len);
 	// }
 
 	printf("Server terminated.\n");
