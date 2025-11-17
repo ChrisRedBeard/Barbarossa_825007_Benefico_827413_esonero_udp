@@ -153,7 +153,7 @@ Il codice deve compilare ed eseguire correttamente su:
 - Gestione appropriata degli errori di sistema
 
 ### 4. Risoluzione Nomi DNS
-- Il client deve utilizzare `localhost' come indirizzo predefinito invece di `127.0.0.1`
+- Il client deve utilizzare `localhost` come indirizzo predefinito invece di `127.0.0.1`
 - Questo requisito permette di sfruttare le funzioni di risoluzione dei nomi DNS del sistema operativo
 - Il codice deve supportare sia nomi simbolici (es. `localhost`, `example.com`) che indirizzi IP  (es. `127.0.0.1`, `192.168.1.1`)
 
