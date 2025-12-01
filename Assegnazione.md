@@ -1,4 +1,4 @@
-# Esonero di Laboratorio UDP - Reti di Calcolatori (ITPS A-L) 2025-26
+# Esonero di Laboratorio UDP - Reti di Calcolatori (ITPS A-L) 2025-26 :santa: :christmas_tree: :gift:
 
 ## Obiettivo Generale
 **Migrare** l'applicazione client/server del servizio meteo dal protocollo **TCP** (realizzata nel primo esonero) al protocollo **UDP** (User Datagram Protocol).
