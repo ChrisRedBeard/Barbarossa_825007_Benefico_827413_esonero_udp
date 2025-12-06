@@ -26,11 +26,16 @@
 
 #define NO_ERROR 0
 
+void ErrorHandler(char *errorMessage) {
+printf(errorMessage);
+}
+
 void clearwinsock() {
 #if defined WIN32
 	WSACleanup();
 #endif
 }
+
 
 int main(int argc, char *argv[]) {
 
@@ -47,14 +52,40 @@ int main(int argc, char *argv[]) {
 #endif
 
 	int my_socket;
-
+	struct sockaddr_in echoServAddr;
+	struct sockaddr_in echoClntAddr;
+	unsigned int cliAddrLen;
+	char echoBuffer[ECHOMAX];
+	int recvMsgSize;
 	// TODO: Create UDP socket
 
+	if ((my_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+	ErrorHandler("socket() failed");
+
 	// TODO: Configure server address
+
+	memset(&echoServAddr, 0, sizeof(echoServAddr));
+	echoServAddr.sin_family = AF_INET;
+	echoServAddr.sin_port = htons(PORT);
+	echoServAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	
 	// TODO: Bind socket
+	if ((bind(my_socket, (struct sockaddr *)&echoServAddr, sizeof(echoServAddr))) < 0)
+	ErrorHandler("bind() failed");
 
 	// TODO: Implement UDP datagram reception loop 
+	while (1) {
+		cliAddrLen = sizeof(echoClntAddr);
+		recvMsgSize = recvfrom(my_socket, echoBuffer, ECHOMAX, 0,
+				(struct sockaddr *) &echoClntAddr, &cliAddrLen);
+		printf("Handling client %s\n", inet_ntoa(echoClntAddr.sin_addr));
+		printf("Received: %s\n", echoBuffer);
+		// RINVIA LA STRINGA ECHO AL CLIENT
+		if (sendto(my_socket, echoBuffer, recvMsgSize, 0,
+				(struct sockaddr *) &echoClntAddr, sizeof(echoClntAddr))
+				!= recvMsgSize)
+			ErrorHandler("sendto() sent different number of bytes than expected");
+	}
 
 	printf("Server terminated.\n");
 
