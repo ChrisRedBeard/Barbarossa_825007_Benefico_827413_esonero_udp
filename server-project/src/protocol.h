@@ -20,6 +20,14 @@
 #define ECHOMAX 255
 #define PORT 48000
 
+#define BUFFER_SIZE 512    // Buffer size for messages
+
+//codici di stato
+#define INVALID_CITY 1
+#define INVALID_REQ 2
+#define VALID_REQ 0
+
+
 /*
  * ============================================================================
  * PROTOCOL DATA STRUCTURES
