@@ -11,7 +11,7 @@
 #include <stdint.h>
 
 #define ECHOMAX 255
-#define PORT 48000
+#define SERVER_PROTOPORT 48000
 
 
 
