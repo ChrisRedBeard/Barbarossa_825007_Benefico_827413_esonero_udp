@@ -133,54 +133,73 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 #endif
-
 	int my_socket;
+	    struct sockaddr_in echoServAddr;
+	    struct sockaddr_in fromAddr;
+	    unsigned int fromSize;
+	    char echoString[ECHOMAX];
+	    char echoBuffer[ECHOMAX];
+	    // Buffer di ricezione sicuro basato sulla costante del protocollo
+	    int echoStringLen;
+	    int respStringLen;
 
-	struct sockaddr_in echoServAddr;
-	struct sockaddr_in fromAddr;
-	typedef int socklen_t;
-	socklen_t fromSize;
+	    // TODO: Creazione Socket
+	    if ((my_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+	        ErrorHandler("socket() failed");
 
-	// TODO: Create UDP socket
-
-	if ((my_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-	ErrorHandler("socket() failed");
-
-
-	// TODO: Configure server address
-
-	memset(&echoServAddr, 0, sizeof(echoServAddr));
-		echoServAddr.sin_family = PF_INET;
-		echoServAddr.sin_port = htons(port);
-		echoServAddr.sin_addr.s_addr = inet_addr(server_ip);
-
-	// TODO: Implement UDP communication logic
-
-	weather_response_t resp;
-
-	if (sendto(my_socket, (const char*)&req, sizeof(weather_request_t), 0, (struct sockaddr*)&echoServAddr, sizeof(echoServAddr)) != sizeof(weather_request_t))
-	ErrorHandler("sendto() sent different number of bytes than expected");
-
-	fromSize = sizeof(fromAddr);
-	if(recvfrom(my_socket,(char*) &resp, sizeof(weather_response_t), 0, (struct sockaddr*)&fromAddr, &fromSize) != sizeof(weather_response_t))
-		ErrorHandler("recvfrom() Error");
-
-	if (echoServAddr.sin_addr.s_addr != fromAddr.sin_addr.s_addr)
-	{
-	fprintf(stderr, "Errore: ricevuto un pacchetto da una fonte sconosciuta.\n");
-	exit(EXIT_FAILURE);
-	}
-
-	switch(resp.status){
-		  case 1: printf("Ricevuto risultato dal server ip %s Citta' non disponibile",INDIRIZZO_IP_SERVER);
-		  	  	  break;
-		  case 2: printf("Ricevuto risultato dal server ip %s Richiesta non valida",INDIRIZZO_IP_SERVER);
-		  	  	  break;
-		  default:	printf("Ricevuto risultato dal server ip %s %s: %s",server_ip,req.city,valueToString(resp.type,resp.value));
-		  	  	  break;
-		 }
+	    // TODO: Configurazione indirizzo Server
+	    memset(&echoServAddr, 0, sizeof(echoServAddr));
+	    echoServAddr.sin_family = PF_INET;
+	    echoServAddr.sin_port = htons(port);
+	    echoServAddr.sin_addr.s_addr = inet_addr(server_ip);
 
 
+
+	    // TODO: Logica di comunicazione UDP
+
+	    // Costruzione buffer richiesta
+	        char sendBuffer[sizeof(weather_request_t)];
+	        sendBuffer[0] = req.type;
+	        memcpy(sendBuffer + 1, req.city, sizeof(req.city));
+
+	        // Invio richiesta
+	        if (sendto(my_socket, sendBuffer, sizeof(weather_request_t), 0,
+	                   (struct sockaddr*)&echoServAddr, sizeof(echoServAddr)) != sizeof(weather_request_t)) {
+	            ErrorHandler("sendto() failed");
+	            closesocket(my_socket);
+	            clearwinsock();
+	            return -1;
+	        }
+
+	        // Ricezione risposta
+	        unsigned int fromLen = sizeof(fromAddr);
+	        char recvBuffer[sizeof(weather_response_t)];
+	        int recvLen = recvfrom(my_socket, recvBuffer, sizeof(recvBuffer), 0,
+	                               (struct sockaddr*)&fromAddr, &fromLen);
+	        if (recvLen != sizeof(weather_response_t)) {
+	            ErrorHandler("pacchetto di risposta di dimensione errata");
+	            closesocket(my_socket);
+	            clearwinsock();
+	            return -1;
+	        }
+
+
+
+	        // Interpretazione risposta
+	        weather_response_t resp;
+	        memcpy(&resp, recvBuffer, sizeof(resp));
+
+	        switch(resp.status){
+	            case 1:
+	                printf("Città non disponibile\n");
+	                break;
+	            case 2:
+	                printf("Richiesta non valida\n");
+	                break;
+	            default:
+	                printf("Risultato per %s: %s\n", req.city, valueToString(resp.type, resp.value));
+	                break;
+	        }
 
 
 	// TODO: Close socket

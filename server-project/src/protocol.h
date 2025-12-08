@@ -18,7 +18,7 @@
 
 
 #define ECHOMAX 255
-#define PORT 48000
+#define SERVER_PROTOPORT 48000
 
 #define BUFFER_SIZE 512    // Buffer size for messages
 

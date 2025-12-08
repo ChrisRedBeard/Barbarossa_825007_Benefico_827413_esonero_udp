@@ -26,6 +26,8 @@
 
 #define NO_ERROR 0
 
+#define INDIRIZZO_IP_SERVER "127.0.0.1"
+
 
 char* strlwr(char *s) {
     for (char *p = s; *p; p++) {
@@ -33,7 +35,7 @@ char* strlwr(char *s) {
     }
     return s;
 }
-#endif
+
 
 
 float get_temperature(void) { // Range: -10.0 to 40.0 gradi C
@@ -67,6 +69,12 @@ int findString(const char *target) {
 
 void errorhandler(char *error_message) {
     printf("%s", error_message);
+}
+
+void clearwinsock() {
+#ifdef WIN32
+	WSACleanup();
+#endif
 }
 
 void handleClientConnection(int client_socket);
@@ -165,14 +173,37 @@ void ErrorHandler(char *errorMessage) {
 printf(errorMessage);
 }
 
-void clearwinsock() {
-#if defined WIN32
-	WSACleanup();
-#endif
-}
+
 
 
 int main(int argc, char *argv[]) {
+
+    int port = SERVER_PROTOPORT;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-p") == 0) {
+            if (i + 1 < argc) {
+                port = atoi(argv[i + 1]);
+                if (port <= 0) {
+                    printf("Errore: porta non valida.\n\n");
+                    printf("Uso corretto:\n  main.exe [-p porta]\n\n");
+                    return 1;
+                }
+                i++;
+            } else {
+                printf("Errore: manca il numero di porta dopo -p.\n\n");
+                printf("Uso corretto:\n  main.exe [-p porta]\n\n");
+                return 1;
+            }
+        } else {
+            printf("Errore: argomento sconosciuto: %s\n\n", argv[i]);
+            printf("Uso corretto:\n  main.exe [-p porta]\n\n");
+            return 1;
+        }
+    }
+
+    printf("Porta selezionata: %d\n", port);
+
 
 	// TODO: Implement server logic
 
@@ -187,42 +218,106 @@ int main(int argc, char *argv[]) {
 #endif
 
 	int my_socket;
-	struct sockaddr_in echoServAddr;
-	struct sockaddr_in echoClntAddr;
-	unsigned int cliAddrLen;
-	char echoBuffer[ECHOMAX];
-	int recvMsgSize;
-	// TODO: Create UDP socket
+	    struct sockaddr_in echoServAddr;
+	    struct sockaddr_in echoClntAddr;
+	    unsigned int cliAddrLen;
 
-	if ((my_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-	ErrorHandler("socket() failed");
+	    // Buffer per ricevere i dati grezzi
+	    char echoBuffer[ECHOMAX];
+	    int recvMsgSize;
 
-	// TODO: Configure server address
+	    // TODO: Create UDP socket
+	    if ((my_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+	        ErrorHandler("socket() failed");
 
-	memset(&echoServAddr, 0, sizeof(echoServAddr));
-	echoServAddr.sin_family = AF_INET;
-	echoServAddr.sin_port = htons(PORT);
-	echoServAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	
-	// TODO: Bind socket
-	if ((bind(my_socket, (struct sockaddr *)&echoServAddr, sizeof(echoServAddr))) < 0)
-	ErrorHandler("bind() failed");
+	    // TODO: Configure server address
+	    memset(&echoServAddr, 0, sizeof(echoServAddr));
+	    echoServAddr.sin_family = AF_INET;
+	    echoServAddr.sin_port = htons(port);
+	    // Bind a INADDR_ANY permette di ricevere da qualsiasi interfaccia di rete (pratica standard)
+	    // Se si vuole limitare solo a localhost usa: inet_addr(INDIRIZZO_IP_SERVER);
+	    echoServAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	// TODO: Implement UDP datagram reception loop 
-	while (1) {
-		cliAddrLen = sizeof(echoClntAddr);
-		recvMsgSize = recvfrom(my_socket, echoBuffer, ECHOMAX, 0,
-				(struct sockaddr *) &echoClntAddr, &cliAddrLen);
-		printf("Handling client %s\n", inet_ntoa(echoClntAddr.sin_addr));
-		printf("Received: %s\n", echoBuffer);
-		// RINVIA LA STRINGA ECHO AL CLIENT
-		if (sendto(my_socket, echoBuffer, recvMsgSize, 0,
-				(struct sockaddr *) &echoClntAddr, sizeof(echoClntAddr))
-				!= recvMsgSize)
-			ErrorHandler("sendto() sent different number of bytes than expected");
-	}
+	    // TODO: Bind socket
+	    if ((bind(my_socket, (struct sockaddr *)&echoServAddr, sizeof(echoServAddr))) < 0)
+	        ErrorHandler("bind() failed");
 
-	printf("Server terminated.\n");
+	    printf("In attesa di richieste...\n");
+
+	    // Strutture per la logica meteo
+	    weather_request_t *reqPtr;
+	    weather_response_t resp;
+
+	    // TODO: Implement UDP datagram reception loop
+	    while (1) {
+	        cliAddrLen = sizeof(echoClntAddr);
+
+	        // 1. RICEZIONE DATI
+	        recvMsgSize = recvfrom(my_socket, echoBuffer, ECHOMAX, 0,
+	                (struct sockaddr *) &echoClntAddr, &cliAddrLen);
+
+	        if(recvMsgSize < 0){
+	            ErrorHandler("recvfrom() failed");
+	            continue; // Non uscire dal loop, aspetta il prossimo pacchetto
+	        }
+
+	        // Controllo dimensione minima
+	        if (recvMsgSize != sizeof(weather_request_t)) {
+	            printf("Ricevuto pacchetto di dimensione errata (%d byte). Ignorato.\n", recvMsgSize);
+	            continue;
+	        }
+
+	        // Casting del buffer ricevuto nella struttura richiesta
+	        reqPtr = (weather_request_t *)echoBuffer;
+
+	        printf("Handling client %s\n", inet_ntoa(echoClntAddr.sin_addr));
+
+	        // 2. ELABORAZIONE LOGICA METEO (Logica spostata qui dal vecchio handleClientConnection)
+
+	        // Normalizzazione input
+	        strlwr(reqPtr->city);
+	        reqPtr->type = tolower((unsigned char)reqPtr->type);
+
+	        printf("Richiesta -> Citta: %s, Tipo: %c\n", reqPtr->city, reqPtr->type);
+
+	        // Verifica Città
+	        // Assicurati che questi valori corrispondano al protocollo (0, 1, 2)
+	        // Qui assumo: 0 = OK, 1 = Città Errata, 2 = Richiesta Errata
+	        int cityStatus = findString(reqPtr->city);
+
+	        if (cityStatus == 0) { // VALID_REQ / Città trovata
+	             resp.status = 0; // OK
+	             switch (reqPtr->type) {
+	                case 't': resp.value = get_temperature(); break;
+	                case 'p': resp.value = get_pressure(); break;
+	                case 'h': resp.value = get_humidity(); break;
+	                case 'w': resp.value = get_wind(); break;
+	                default:
+	                    resp.status = 2; // INVALID_REQ / Tipo errato
+	                    resp.value = 0.0;
+	                    break;
+	             }
+	             resp.type = reqPtr->type;
+	        } else {
+	            resp.status = 1; // INVALID_CITY
+	            resp.type = reqPtr->type;
+	            resp.value = 0.0;
+	        }
+
+	        // Output colorato lato server per debug
+	        if(resp.status == 0)      printf("\033[32mStatus: OK (Invio %.2f)\033[0m\n", resp.value);
+	        else if(resp.status == 1) printf("\033[31mStatus: Città non valida\033[0m\n");
+	        else                      printf("\033[31mStatus: Tipo non valido\033[0m\n");
+	        printf("------------------------------------------------\n");
+
+	        // 3. INVIO RISPOSTA
+	        if (sendto(my_socket, (char*)&resp, sizeof(weather_response_t), 0,
+	                (struct sockaddr *) &echoClntAddr, sizeof(echoClntAddr)) != sizeof(weather_response_t)) {
+	            ErrorHandler("sendto() sent different number of bytes than expected");
+	        }
+	    }
+
+	    printf("Server terminated.\n");
 
 	closesocket(my_socket);
 	clearwinsock();
