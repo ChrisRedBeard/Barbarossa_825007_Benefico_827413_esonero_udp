@@ -77,98 +77,6 @@ void clearwinsock() {
 #endif
 }
 
-void handleClientConnection(int client_socket);
-
-void handleClientConnection(int client_socket) {
-    char buffer[BUFFER_SIZE];
-    int bytes_received;
-    weather_response_t response;
-    weather_request_t request;
-
-    printf("Client connesso! In attesa di messaggi...\n");
-
-    while (1) {
-
-        bytes_received = recv(client_socket, (char*) &request,
-                sizeof(weather_request_t), 0);
-
-        // Conversione in minuscolo PORTABILE
-        strlwr(request.city);
-        request.type = tolower((unsigned char)request.type);
-
-        response.status = findString(request.city);
-
-        if (response.status == VALID_REQ) {
-            switch (request.type) {
-            case 't':
-                response.value = get_temperature();
-                response.type = request.type;
-                break;
-            case 'p':
-                response.value = get_pressure();
-                response.type = request.type;
-                break;
-            case 'h':
-                response.value = get_humidity();
-                response.type = request.type;
-                break;
-            case 'w':
-                response.value = get_wind();
-                response.type = request.type;
-                break;
-            default:
-                response.status = INVALID_REQ;
-                break;
-            };
-        } else {
-            response.value = 0.0;
-        };
-
-        if (bytes_received > 0) {
-            buffer[bytes_received] = '\0';
-
-            printf("Tipo richiesto ricevuta: %c\n", request.type);
-            printf("Città richiesta ricevuta: %s\n\n", request.city);
-            printf("INVIO RISPOSTA IN CORSO...\n");
-
-            if(response.status==VALID_REQ){
-                printf("\033[32mStatus:0\033[0m\n");
-            }else if(response.status==INVALID_REQ){
-                printf("\033[31mStatus:2\033[0m\n");
-            }else if(response.status==INVALID_CITY){
-                printf("\033[31mStatus:1\033[0m\n");
-            };
-            printf("invio risposta:Tipo: %c\n", response.type);
-            printf("invio risposta:Valore: %.2f\n", response.value);
-
-            if (send(client_socket, (char*) &response,
-                    sizeof(weather_response_t), 0)
-                    != sizeof(weather_response_t)) {
-                errorhandler(
-                        "send() sent a different number of bytes than expected");
-                closesocket(client_socket);
-                clearwinsock();
-            }
-
-            if (strcmp(buffer, "quit") == 0) {
-                printf("Client ha richiesto la disconnessione.\n");
-                break;
-            }
-        } else if (bytes_received == 0) {
-            printf("Client disconnesso.\n");
-            break;
-        } else {
-            errorhandler("recv() failed.\n");
-            break;
-        }
-    }
-
-    closesocket(client_socket);
-}
-
-
-
-
 void ErrorHandler(char *errorMessage) {
 printf(errorMessage);
 }
@@ -245,7 +153,7 @@ int main(int argc, char *argv[]) {
 	    printf("In attesa di richieste...\n");
 
 	    // Strutture per la logica meteo
-	    weather_request_t *reqPtr;
+
 	    weather_response_t resp;
 
 	    // TODO: Implement UDP datagram reception loop
@@ -267,27 +175,38 @@ int main(int argc, char *argv[]) {
 	            continue;
 	        }
 
-	        // Casting del buffer ricevuto nella struttura richiesta
-	        reqPtr = (weather_request_t *)echoBuffer;
+	        weather_request_t req;
+	        int offset = 0;
+
+	        // type (1 byte)
+	        memcpy(&req.type, echoBuffer + offset, sizeof(char));
+	        offset += sizeof(char);
+
+	        // city (64 byte)
+	        memcpy(req.city, echoBuffer + offset, sizeof(req.city));
+	        offset += sizeof(req.city);
+
+	        // garantire null-termination
+	        req.city[63] = '\0';
 
 	        printf("Handling client %s\n", inet_ntoa(echoClntAddr.sin_addr));
 
-	        // 2. ELABORAZIONE LOGICA METEO (Logica spostata qui dal vecchio handleClientConnection)
+	        // 2. ELABORAZIONE LOGICA METEO
 
 	        // Normalizzazione input
-	        strlwr(reqPtr->city);
-	        reqPtr->type = tolower((unsigned char)reqPtr->type);
+	        strlwr(req.city);
+	        req.type = tolower((unsigned char)req.type);
 
-	        printf("Richiesta -> Citta: %s, Tipo: %c\n", reqPtr->city, reqPtr->type);
+	        printf("Richiesta -> Citta: %s, Tipo: %c\n", req.city, req.type);
 
 	        // Verifica Città
 	        // Assicurati che questi valori corrispondano al protocollo (0, 1, 2)
 	        // Qui assumo: 0 = OK, 1 = Città Errata, 2 = Richiesta Errata
-	        int cityStatus = findString(reqPtr->city);
+	        int cityStatus = findString(req.city);
 
-	        if (cityStatus == 0) { // VALID_REQ / Città trovata
-	             resp.status = 0; // OK
-	             switch (reqPtr->type) {
+	        if (cityStatus == VALID_REQ) {
+	             resp.status = 0;
+	             switch (req.type) {
 	                case 't': resp.value = get_temperature(); break;
 	                case 'p': resp.value = get_pressure(); break;
 	                case 'h': resp.value = get_humidity(); break;
@@ -297,24 +216,44 @@ int main(int argc, char *argv[]) {
 	                    resp.value = 0.0;
 	                    break;
 	             }
-	             resp.type = reqPtr->type;
+	             resp.type = req.type;
 	        } else {
-	            resp.status = 1; // INVALID_CITY
-	            resp.type = reqPtr->type;
+	            resp.status = INVALID_CITY; // INVALID_CITY
+	            resp.type = req.type;
 	            resp.value = 0.0;
 	        }
 
 	        // Output colorato lato server per debug
-	        if(resp.status == 0)      printf("\033[32mStatus: OK (Invio %.2f)\033[0m\n", resp.value);
-	        else if(resp.status == 1) printf("\033[31mStatus: Città non valida\033[0m\n");
+	        if(resp.status == VALID_REQ)      printf("\033[32mStatus: OK (Invio %.2f)\033[0m\n", resp.value);
+	        else if(resp.status == INVALID_CITY) printf("\033[31mStatus: Città non valida\033[0m\n");
 	        else                      printf("\033[31mStatus: Tipo non valido\033[0m\n");
 	        printf("------------------------------------------------\n");
 
 	        // 3. INVIO RISPOSTA
-	        if (sendto(my_socket, (char*)&resp, sizeof(weather_response_t), 0,
-	                (struct sockaddr *) &echoClntAddr, sizeof(echoClntAddr)) != sizeof(weather_response_t)) {
-	            ErrorHandler("sendto() sent different number of bytes than expected");
-	        }
+	        char buffer[sizeof(uint32_t) + sizeof(char) + sizeof(float)];
+	        offset = 0;
+
+	        // Serializza status (con network byte order)
+	        uint32_t net_status = htonl(resp.status);
+	        memcpy(buffer + offset, &net_status, sizeof(uint32_t));
+	        offset += sizeof(uint32_t);
+
+	        // Serializza type (1 byte, no conversione)
+	        memcpy(buffer + offset, &resp.type, sizeof(char));
+	        offset += sizeof(char);
+
+	        // Serializza value (float con network byte order)
+	        uint32_t temp;
+	        memcpy(&temp, &resp.value, sizeof(float));
+	        temp = htonl(temp);
+	        memcpy(buffer + offset, &temp, sizeof(float));
+	        offset += sizeof(float);
+	        ssize_t sent =sendto(my_socket,buffer, offset, 0,
+	                (struct sockaddr *) &echoClntAddr, sizeof(echoClntAddr));
+
+			if (sent != offset) {
+				ErrorHandler("sendto() sent different number of bytes than expected");
+			}
 	    }
 
 	    printf("Server terminated.\n");

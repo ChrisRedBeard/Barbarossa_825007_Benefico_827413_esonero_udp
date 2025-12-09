@@ -158,9 +158,19 @@ int main(int argc, char *argv[]) {
 	    // TODO: Logica di comunicazione UDP
 
 	    // Costruzione buffer richiesta
-	        char sendBuffer[sizeof(weather_request_t)];
-	        sendBuffer[0] = req.type;
-	        memcpy(sendBuffer + 1, req.city, sizeof(req.city));
+	        char sendBuffer[sizeof(uint32_t) + sizeof(char) + sizeof(float)];
+	        int offset = 0;
+
+
+	        // Serializza type
+	        memcpy(sendBuffer + offset, &req.type, sizeof(char));
+	        offset += sizeof(char);
+
+	        // Serializza city (64 byte fissi)
+	        memcpy(sendBuffer + offset, req.city, sizeof(req.city));
+	        offset += sizeof(req.city);
+
+
 
 	        // Invio richiesta
 	        if (sendto(my_socket, sendBuffer, sizeof(weather_request_t), 0,
@@ -173,21 +183,36 @@ int main(int argc, char *argv[]) {
 
 	        // Ricezione risposta
 	        unsigned int fromLen = sizeof(fromAddr);
-	        char recvBuffer[sizeof(weather_response_t)];
+	        char recvBuffer[sizeof(uint32_t) + sizeof(char) + sizeof(float)];
 	        int recvLen = recvfrom(my_socket, recvBuffer, sizeof(recvBuffer), 0,
 	                               (struct sockaddr*)&fromAddr, &fromLen);
-	        if (recvLen != sizeof(weather_response_t)) {
+	        if (recvLen != (sizeof(uint32_t) + sizeof(char) + sizeof(float))) {
 	            ErrorHandler("pacchetto di risposta di dimensione errata");
 	            closesocket(my_socket);
 	            clearwinsock();
 	            return -1;
 	        }
-
-
-
-	        // Interpretazione risposta
+	         // Interpretazione risposta : deserializzazione
 	        weather_response_t resp;
-	        memcpy(&resp, recvBuffer, sizeof(resp));
+	        offset = 0;
+
+	        // 1. Deserializza status
+	        uint32_t net_status;
+	        memcpy(&net_status, recvBuffer + offset, sizeof(uint32_t));
+	        resp.status = ntohl(net_status);
+	        offset += sizeof(uint32_t);
+
+	        // 2. Deserializza type (1 byte)
+	        memcpy(&resp.type, recvBuffer + offset, sizeof(char));
+	        offset += sizeof(char);
+
+	        // 3. Deserializza value (float)
+	        uint32_t temp;
+	        memcpy(&temp, recvBuffer + offset, sizeof(uint32_t));
+	        temp = ntohl(temp);   // riconverti in host byte order
+	        memcpy(&resp.value, &temp, sizeof(uint32_t)); // reinterpretazione come float
+	        offset += sizeof(uint32_t);
+
 
 	        switch(resp.status){
 	            case 1:
