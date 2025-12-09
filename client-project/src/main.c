@@ -193,12 +193,7 @@ int main(int argc, char *argv[]) {
 	int my_socket;
 
 	    struct sockaddr_in fromAddr;
-	    unsigned int fromSize;
-	    char echoString[ECHOMAX];
-	    char echoBuffer[ECHOMAX];
-	    // Buffer di ricezione sicuro basato sulla costante del protocollo
-	    int echoStringLen;
-	    int respStringLen;
+
 
 	    // TODO: Creazione Socket
 	    if ((my_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
