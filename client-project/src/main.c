@@ -80,6 +80,7 @@ int main(int argc, char *argv[]) {
 	            return -1;
 	        }
 	        snprintf(server_ip, sizeof(server_ip), "%s", argv[i+1]);
+
 	        i += 2;
 	        continue;
 	    }
@@ -102,8 +103,13 @@ int main(int argc, char *argv[]) {
 	            return -1;
 	        }
 
-	        if (sscanf(argv[i+1], "%c %39[^\n]", &req.type, req.city) != 2) {
+	        if (sscanf(argv[i+1], "%c %64[^\n]", &req.type, req.city) != 2) {
 	            fprintf(stderr, "Errore: formato richiesto deve essere \"type city\"\n");
+	            return -1;
+	        }
+	        size_t city_len = strlen(req.city);
+	        if (city_len > 63) {
+	            fprintf(stderr, "Errore: il nome della citta' e' troppo lungo (%zu caratteri, massimo 63).\n", city_len);
 	            return -1;
 	        }
 
@@ -121,9 +127,6 @@ int main(int argc, char *argv[]) {
 	    return -1;
 	}
 
-
-	// TODO: Implement client logic
-
 #if defined WIN32
 	// Initialize Winsock
 	WSADATA wsa_data;
@@ -133,8 +136,62 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 #endif
+
+	//server ip è il mio nome simbolico che vado ad interpretare come indirizzo ip
+	struct sockaddr_in echoServAddr;
+	memset(&echoServAddr, 0, sizeof(echoServAddr));
+	echoServAddr.sin_family = AF_INET;
+	echoServAddr.sin_port = htons(port);
+
+	struct hostent *host = NULL;
+	struct in_addr addr;
+
+	// Proviamo a interpretare server_ip come IP
+	#if defined(WIN32)
+	addr.s_addr = inet_addr(server_ip);  // restituisce INADDR_NONE se fallisce
+	if (addr.s_addr != INADDR_NONE) {
+	    // Reverse lookup su Windows
+	    host = gethostbyaddr((const char*)&addr, sizeof(addr), AF_INET);
+	    if (host != NULL) {
+	        snprintf(server_ip, sizeof(server_ip), "%s", host->h_name);
+	    }
+	    memcpy(&echoServAddr.sin_addr, &addr, sizeof(addr));
+	} else {
+	    // Forward lookup
+	    host = gethostbyname(server_ip);
+	    if (host == NULL) {
+	        ErrorHandler("Errore nel risolvere l'host");
+	        clearwinsock();
+	        return EXIT_FAILURE;
+	    }
+	    memcpy(&echoServAddr.sin_addr, host->h_addr_list[0], host->h_length);
+	    snprintf(server_ip, sizeof(server_ip), "%s", host->h_name);
+	}
+	#else
+	// Linux/macOS
+	if (inet_pton(AF_INET, server_ip, &addr) == 1) {
+	    host = gethostbyaddr(&addr, sizeof(addr), AF_INET);
+	    if (host != NULL) {
+	        snprintf(server_ip, sizeof(server_ip), "%s", host->h_name);
+	    }
+	    memcpy(&echoServAddr.sin_addr, &addr, sizeof(addr));
+	} else {
+	    host = gethostbyname(server_ip);
+	    if (host == NULL) {
+	        ErrorHandler("Errore nel risolvere l'host");
+	        clearwinsock();
+	        return EXIT_FAILURE;
+	    }
+	    memcpy(&echoServAddr.sin_addr, host->h_addr_list[0], host->h_length);
+	    snprintf(server_ip, sizeof(server_ip), "%s", host->h_name);
+	}
+	#endif
+
+
+	// TODO: Implement client logic
+
 	int my_socket;
-	    struct sockaddr_in echoServAddr;
+
 	    struct sockaddr_in fromAddr;
 	    unsigned int fromSize;
 	    char echoString[ECHOMAX];
@@ -147,11 +204,6 @@ int main(int argc, char *argv[]) {
 	    if ((my_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
 	        ErrorHandler("socket() failed");
 
-	    // TODO: Configurazione indirizzo Server
-	    memset(&echoServAddr, 0, sizeof(echoServAddr));
-	    echoServAddr.sin_family = PF_INET;
-	    echoServAddr.sin_port = htons(port);
-	    echoServAddr.sin_addr.s_addr = inet_addr(server_ip);
 
 
 
@@ -216,13 +268,13 @@ int main(int argc, char *argv[]) {
 
 	        switch(resp.status){
 	            case 1:
-	                printf("Città non disponibile\n");
+	                printf("Ricevuto risultato dal server %s (ip %s). Citta' non disponibile\n",server_ip,inet_ntoa(*(struct in_addr *)host->h_addr));
 	                break;
 	            case 2:
-	                printf("Richiesta non valida\n");
+	                printf("Ricevuto risultato dal server %s (ip %s). Richiesta non valida\n",server_ip,inet_ntoa(*(struct in_addr *)host->h_addr));
 	                break;
 	            default:
-	                printf("Risultato per %s: %s\n", req.city, valueToString(resp.type, resp.value));
+	                printf("Ricevuto risultato dal server %s (ip %s). %s: %s\n",server_ip,inet_ntoa(*(struct in_addr *)host->h_addr),req.city, (valueToString(resp.type, resp.value)) );
 	                break;
 	        }
 
@@ -232,4 +284,5 @@ int main(int argc, char *argv[]) {
 	printf("Client terminated.\n");
 	clearwinsock();
 	return 0;
+
 } // main end
