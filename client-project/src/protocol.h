@@ -13,6 +13,11 @@
 #define ECHOMAX 255
 #define SERVER_PROTOPORT 48000
 
+//codici di stato
+#define INVALID_CITY 1
+#define INVALID_REQ 2
+#define VALID_REQ 0
+
 
 
 

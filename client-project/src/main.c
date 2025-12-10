@@ -262,11 +262,11 @@ int main(int argc, char *argv[]) {
 
 
 	        switch(resp.status){
-	            case 1:
-	                printf("Citta' non disponibile\n",server_ip,inet_ntoa(*(struct in_addr *)host->h_addr));
+	            case INVALID_CITY:
+	                printf("Citta' non disponibile\n");
 	                break;
-	            case 2:
-	                printf("Richiesta non valida\n",server_ip,inet_ntoa(*(struct in_addr *)host->h_addr));
+	            case INVALID_REQ:
+	                printf("Richiesta non valida\n");
 	                break;
 	            default:
 	                printf("Ricevuto risultato dal server %s (ip %s). %s: %s\n",server_ip,inet_ntoa(*(struct in_addr *)host->h_addr),req.city, (valueToString(resp.type, resp.value)) );
@@ -276,7 +276,6 @@ int main(int argc, char *argv[]) {
 
 	// TODO: Close socket
 	closesocket(my_socket);
-	printf("Client terminated.\n");
 	clearwinsock();
 	return 0;
 
