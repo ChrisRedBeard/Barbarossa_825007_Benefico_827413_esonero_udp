@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 
-	//server ip è il mio nome simbolico che vado ad interpretare come indirizzo ip
+	//server ip ï¿½ il mio nome simbolico che vado ad interpretare come indirizzo ip
 	struct sockaddr_in echoServAddr;
 	memset(&echoServAddr, 0, sizeof(echoServAddr));
 	echoServAddr.sin_family = AF_INET;
@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
 	    // TODO: Logica di comunicazione UDP
 
 	    // Costruzione buffer richiesta
-	        char sendBuffer[sizeof(uint32_t) + sizeof(char) + sizeof(float)];
+	        char sendBuffer[sizeof(weather_request_t)];
 	        int offset = 0;
 
 
@@ -220,8 +220,8 @@ int main(int argc, char *argv[]) {
 
 
 	        // Invio richiesta
-	        if (sendto(my_socket, sendBuffer, sizeof(weather_request_t), 0,
-	                   (struct sockaddr*)&echoServAddr, sizeof(echoServAddr)) != sizeof(weather_request_t)) {
+	        if (sendto(my_socket, sendBuffer, sizeof(sendBuffer), 0,
+	                   (struct sockaddr*)&echoServAddr, sizeof(echoServAddr)) != sizeof(sendBuffer)) {
 	            ErrorHandler("sendto() failed");
 	            closesocket(my_socket);
 	            clearwinsock();
@@ -263,10 +263,10 @@ int main(int argc, char *argv[]) {
 
 	        switch(resp.status){
 	            case 1:
-	                printf("Ricevuto risultato dal server %s (ip %s). Citta' non disponibile\n",server_ip,inet_ntoa(*(struct in_addr *)host->h_addr));
+	                printf("Citta' non disponibile\n",server_ip,inet_ntoa(*(struct in_addr *)host->h_addr));
 	                break;
 	            case 2:
-	                printf("Ricevuto risultato dal server %s (ip %s). Richiesta non valida\n",server_ip,inet_ntoa(*(struct in_addr *)host->h_addr));
+	                printf("Richiesta non valida\n",server_ip,inet_ntoa(*(struct in_addr *)host->h_addr));
 	                break;
 	            default:
 	                printf("Ricevuto risultato dal server %s (ip %s). %s: %s\n",server_ip,inet_ntoa(*(struct in_addr *)host->h_addr),req.city, (valueToString(resp.type, resp.value)) );
