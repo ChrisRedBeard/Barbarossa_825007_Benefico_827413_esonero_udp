@@ -59,17 +59,39 @@ float get_pressure(void) { // Range: 950.0 to 1050.0 hPa
 }
 
 int findString(const char *target) {
-    char *lista[] = { "ancona", "bari", "bologna", "cagliari", "catania",
-            "firenze", "genova", "milano", "napoli", "palermo", "perugia",
-            "pisa", "reggio calabria", "roma", "taranto", "torino", "trento",
-            "trieste", "venezia", "verona" };
+    // 1. Controllo stringa nulla o vuota
+    if (target == NULL || target[0] == '\0')
+        return INVALID_REQ;
+
+    // 2. Controllo lunghezza massima (protocollo: max 63 + terminatore)
+    if (strlen(target) > 63)
+        return INVALID_REQ;
+
+    // 3. Controllo caratteri validi (solo lettere + spazi)
+    for (int i = 0; target[i] != '\0'; i++) {
+        if (!isalpha((unsigned char)target[i]) && target[i] != ' ')
+            return INVALID_REQ;
+    }
+
+    // Lista delle città valide
+    const char *lista[] = {
+        "ancona", "bari", "bologna", "cagliari", "catania",
+        "firenze", "genova", "milano", "napoli", "palermo",
+        "perugia", "pisa", "reggio calabria", "roma", "taranto",
+        "torino", "trento", "trieste", "venezia", "verona"
+    };
+
     int size = 20;
+
+    // 4. Ricerca della città
     for (int i = 0; i < size; i++) {
         if (strcmp(lista[i], target) == 0)
-            return VALID_REQ; // trovato
+            return VALID_REQ;   // trovato
     }
-    return INVALID_CITY; // non trovato
+
+    return INVALID_CITY; // città valida come formato ma non esistente
 }
+
 
 void errorhandler(char *error_message) {
     printf("%s", error_message);
