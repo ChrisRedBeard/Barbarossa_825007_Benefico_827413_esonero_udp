@@ -159,6 +159,8 @@ int main(int argc, char *argv[]) {
 	    // Strutture per la logica meteo
 
 	    weather_response_t resp;
+	    memset(&resp, 0, sizeof(resp));
+
 
 	    // TODO: Implement UDP datagram reception loop
 	    while (1) {
