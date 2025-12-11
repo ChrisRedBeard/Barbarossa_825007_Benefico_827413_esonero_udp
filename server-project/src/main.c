@@ -73,12 +73,7 @@ int findString(const char *target) {
             return INVALID_REQ;
     }
 
-    for (int i = 0; target[i] != '\0'; i++) {
-          if (isdigit((unsigned char)target[i]))
-              return INVALID_CITY;
-      }
-
-    // Lista delle città valide
+    // Lista delle citta' valide
     const char *lista[] = {
         "ancona", "bari", "bologna", "cagliari", "catania",
         "firenze", "genova", "milano", "napoli", "palermo",
@@ -86,13 +81,18 @@ int findString(const char *target) {
         "torino", "trento", "trieste", "venezia", "verona"
     };
 
-    int size = 20;
+    int size = 19;
 
     // 4. Ricerca della città
     for (int i = 0; i < size; i++) {
         if (strcmp(lista[i], target) == 0)
             return VALID_REQ;   // trovato
     }
+
+    for (int i = 0; target[i] != '\0'; i++) {
+            if (isdigit((unsigned char)target[i]))
+                return INVALID_CITY;
+        }
 
     return INVALID_CITY; // città valida come formato ma non esistente
 }
