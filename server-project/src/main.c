@@ -73,11 +73,16 @@ int findString(const char *target) {
             return INVALID_REQ;
     }
 
+    for (int i = 0; target[i] != '\0'; i++) {
+          if (isdigit((unsigned char)target[i]))
+              return INVALID_CITY;
+      }
+
     // Lista delle città valide
     const char *lista[] = {
         "ancona", "bari", "bologna", "cagliari", "catania",
         "firenze", "genova", "milano", "napoli", "palermo",
-        "perugia", "pisa", "reggio calabria", "roma", "taranto",
+        "perugia", "pisa", "roma", "taranto",
         "torino", "trento", "trieste", "venezia", "verona"
     };
 
@@ -227,7 +232,7 @@ int main(int argc, char *argv[]) {
 
 	        printf("Richiesta -> Citta: %s, Tipo: %c\n", req.city, req.type);
 
-	        // Verifica Citt�
+	        // Verifica Citta'
 	        // Assicurati che questi valori corrispondano al protocollo (0, 1, 2)
 	        // Qui assumo: 0 = OK, 1 = Citt� Errata, 2 = Richiesta Errata
 	        resp.status = findString(req.city);
