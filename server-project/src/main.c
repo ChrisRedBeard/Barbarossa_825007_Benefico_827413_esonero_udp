@@ -19,6 +19,8 @@
 #include <netdb.h>
 #define closesocket close
 #endif
+#include <ctype.h> // necessario per tolower()
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,12 +31,14 @@
 #define INDIRIZZO_IP_SERVER "127.0.0.1"
 
 
+#ifndef WIN32
 char* strlwr(char *s) {
     for (char *p = s; *p; p++) {
         *p = tolower((unsigned char)*p);
     }
     return s;
 }
+#endif
 
 
 
