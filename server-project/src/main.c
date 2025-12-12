@@ -67,11 +67,17 @@ int findString(const char *target) {
     if (strlen(target) > 63)
         return INVALID_REQ;
 
+   for (int i = 0; target[i] != '\0'; i++) {
+      if (isdigit((unsigned char)target[i])){
+                return INVALID_CITY;}
+   }
+
     // 3. Controllo caratteri validi (solo lettere + spazi)
     for (int i = 0; target[i] != '\0'; i++) {
-        if (!isalpha((unsigned char)target[i]) && target[i] != ' ')
-            return INVALID_REQ;
+        if (!isalpha((unsigned char)target[i]) && target[i] != ' '){
+            return INVALID_REQ;}
     }
+
 
     // Lista delle citta' valide
     const char *lista[] = {
